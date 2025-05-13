@@ -1,8 +1,7 @@
 # jimbe
 
-```sh
-gleam add jimbe@1
-```
+Simple stack based lang made in gleam
+
 ## Development
 
 ```sh

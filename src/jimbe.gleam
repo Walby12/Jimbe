@@ -7,7 +7,7 @@ type OpType {
   Dump
 }
 
-const program = [Push(32), Push(32), Plus, Dump]
+const program = [Dump, Push(35), Push(34), Plus, Dump]
 
 fn add_to_stack(stack: List(Int), x: Int) -> List(Int) {
   [x, ..stack]
@@ -27,39 +27,35 @@ fn sum_list(stack: List(Int), sum: Int) -> Int {
 fn simulate_prog(program:  List(OpType), stack: List(Int), stack_len: Int) {
   case program {
     [Push(x), ..rest] -> {
-      echo "Push"
       let stack = add_to_stack(stack, x)
       let stack_len = stack_len + 1
       simulate_prog(rest, stack, stack_len)
     }
-
     [Plus, ..rest] if stack_len >= 2 -> {
-      echo "Plus"
-      
       let a = list.take(stack, 2)
-
       let sum = sum_list(a, 0)
-      
       let new_stack = list.drop(stack, 2)
-
       let stack = add_to_stack(new_stack, sum)
-
+      let stack_len = stack_len - 1
       simulate_prog(rest, stack, stack_len)
     }
-    [Plus, ..rest] -> {
+    [Plus, ..] -> {
       panic as "Not op in the stack arguments for the plus op"
     }
-    [Dump, ..rest] -> {
-      echo "Dump"
+    [Dump, ..rest] if stack_len > 0 -> {
+      io.println("Stack:")
+      // TODO: find another way
+      echo stack
       simulate_prog(rest, stack, stack_len)
     }
-    [] -> echo "Done"
-    
+    [Dump, ..rest] -> {
+      io.println("Stack: [empty]")
+      simulate_prog(rest, stack, stack_len)
+    }
+    [] ->  {
+      io.println("Interpretation completed")
+    }  
   }
-}
-
-fn compile_prog(program: #()) {
-  echo "Not implemented"
 }
 
 pub fn main() {

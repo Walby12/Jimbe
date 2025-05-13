@@ -1,6 +1,9 @@
 import gleam/list
 import gleam/io
+import gleam/int
 import argv
+import simplifile
+import shellout
 
 type OpType {
   Push(x: Int)
@@ -90,15 +93,42 @@ fn usage() {
   panic as "Provide a know arg"
 }
 
+fn compile_prog(file_path: String, program:  List(OpType), stack: List(Int), stack_len: Int) {
+  let assert Ok(_) = "segment .text
+global _start
+_start:
+  mov rax, 60
+  mov rdi, 0
+  syscall" 
+  |> simplifile.write(to: file_path)
+
+  case program {
+    [Push(x), ..rest] -> {
+      let content = "  push " <> int.to_string(x) <> "\n"
+      let assert Ok(_) = content
+      |> simplifile.append(to: file_path)
+    }
+  }
+
+}
+
+fn run_asm() {
+  shellout.arguments()
+  |> shellout.command(run: "./build.sh", in: ".", opt: [])
+}
+
 pub fn main() {
   let stack = []
   let stack_len = list.length(stack)
   case argv.load().arguments {
     ["int"] -> {
       simulate_prog(program, stack, stack_len)
+      io.println("Done")
     }
     ["com"] -> {
-      io.println("Not implemented")
+      let _ = compile_prog("out.asm")
+      let _ = run_asm()
+      io.println("Done")
     }
     _ -> {
       usage()

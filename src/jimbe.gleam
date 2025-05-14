@@ -58,7 +58,7 @@ fn simulate_prog(program:  List(OpType), stack: List(Int), stack_len: Int) {
       simulate_prog(rest, stack, stack_len)
     }
     [Plus, ..] -> {
-      panic as "Not enough ops in the stack for the plus op"
+      panic as "ERROR: Not enough ops in the stack for the plus op"
     }
     [Minus, ..rest] if stack_len >= 2 -> {
       let a = list.take(stack, 2)
@@ -69,7 +69,7 @@ fn simulate_prog(program:  List(OpType), stack: List(Int), stack_len: Int) {
       simulate_prog(rest, stack, stack_len)
     }
     [Minus, ..] -> {
-      panic as "Not enough ops in the stack for the plus op"
+      panic as "ERROR: Not enough ops in the stack for the minus op"
     }
     [Dump, ..rest] if stack_len > 0 -> {
       // TODO: find another way
@@ -77,7 +77,7 @@ fn simulate_prog(program:  List(OpType), stack: List(Int), stack_len: Int) {
       simulate_prog(rest, stack, stack_len)
     }
     [Dump, ..rest] -> {
-      io.println("Stack: [empty]")
+      echo stack
       simulate_prog(rest, stack, stack_len)
     }
     [] ->  {
@@ -89,45 +89,14 @@ fn simulate_prog(program:  List(OpType), stack: List(Int), stack_len: Int) {
 fn usage() {
   io.println("Usage:")
   io.println("    int    [interprets the program]")
-  io.println("    com    [compiles the program]")
-  panic as "Provide a know arg"
-}
-
-fn compile_prog(file_path: String, program:  List(OpType), stack: List(Int), stack_len: Int) {
-  let assert Ok(_) = "segment .text
-global _start
-_start:
-  mov rax, 60
-  mov rdi, 0
-  syscall" 
-  |> simplifile.write(to: file_path)
-
-  case program {
-    [Push(x), ..rest] -> {
-      let content = "  push " <> int.to_string(x) <> "\n"
-      let assert Ok(_) = content
-      |> simplifile.append(to: file_path)
-    }
-  }
-
-}
-
-fn run_asm() {
-  shellout.arguments()
-  |> shellout.command(run: "./build.sh", in: ".", opt: [])
+  panic as "ERROR: Provide a know arg"
 }
 
 pub fn main() {
   let stack = []
-  let stack_len = list.length(stack)
   case argv.load().arguments {
     ["int"] -> {
-      simulate_prog(program, stack, stack_len)
-      io.println("Done")
-    }
-    ["com"] -> {
-      let _ = compile_prog("out.asm")
-      let _ = run_asm()
+      simulate_prog(program, stack, 0)
       io.println("Done")
     }
     _ -> {

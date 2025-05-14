@@ -50,32 +50,52 @@ fn split_string(file_path: String) -> List(String) {
   let content = string.split(value, on: "\n")
   let value = string.concat(content)
   let content = string.split(value, on: " ")
+  echo content
   content
 }
 
-fn load_program_from_mem(content: List(String)) -> List(OpType) {
-  load_program_from_mem_helper(content, [])
+fn report_err(statement: Int, index: Int) {
+  let report = "ERROR: invalid op found in src at stmt: " <> int.to_string(statement) <> " at index: " <> int.to_string(index)
+  panic as report
 }
 
-fn load_program_from_mem_helper(content: List(String), acc: List(OpType)) -> List(OpType) {
+fn load_program_from_mem(content: List(String)) -> List(OpType) {
+  load_program_from_mem_helper(content, [], 0, 0)
+}
+
+fn load_program_from_mem_helper(content: List(String), acc: List(OpType), statement: Int, index: Int) -> List(OpType) {
   case content {
-    [".", ..rest] ->
-      load_program_from_mem_helper(rest, [Dump, ..acc])
+    [".", ..rest] -> {
+      let index = index + 1
+      load_program_from_mem_helper(rest, [Dump, ..acc],statement, index)
+    } 
+      
 
-    ["+", ..rest] ->
-      load_program_from_mem_helper(rest, [Plus, ..acc])
+    ["+", ..rest] -> {
+      let index = index + 1
+      load_program_from_mem_helper(rest, [Plus, ..acc], statement, index)
+    }
 
-    ["-", ..rest] ->
-      load_program_from_mem_helper(rest, [Minus, ..acc])
+    ["-", ..rest] -> {
+      let index = index + 1
+      load_program_from_mem_helper(rest, [Minus, ..acc], statement, index)
+    }
+
+    ["@", ..rest] -> {
+      let statement = statement + 1
+      let index = 0
+      load_program_from_mem_helper(rest, acc, statement, index)
+    }
 
     [head, ..rest] -> {
       let parsed = int.base_parse(head, 10)
+      let index = index + 1
       let value =
       case parsed {
         Ok(inner) -> inner
-        Error(_) -> panic as "ERROR: tried to push a non-int value"
+        Error(_) -> report_err(statement, index)
       }
-      load_program_from_mem_helper(rest, [Push(value), ..acc])
+      load_program_from_mem_helper(rest, [Push(value), ..acc], statement, index)
     }
 
     [] -> {

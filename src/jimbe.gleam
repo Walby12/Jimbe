@@ -1,9 +1,9 @@
 import gleam/list
 import gleam/io
 import gleam/int
+import gleam/string
 import argv
 import simplifile
-import shellout
 
 type OpType {
   Push(x: Int)
@@ -11,8 +11,6 @@ type OpType {
   Plus
   Dump
 }
-
-const program = [Dump, Push(70), Push(1), Minus, Push(420), Dump]
 
 fn add_to_stack(stack: List(Int), x: Int) -> List(Int) {
   [x, ..stack]
@@ -39,6 +37,50 @@ fn min_list(stack: List(Int), sum: Int) -> Int {
     [] -> {
       sum
     }  
+  }
+}
+
+fn split_string(file_path: String) -> List(String) {
+  let content  = simplifile.read(from: file_path)
+  let value =
+  case content {
+    Ok(inner) -> inner
+    Error(_) -> panic as "ERROR: coud not open file"
+  }
+  let content = string.split(value, on: "\n")
+  let value = string.concat(content)
+  let content = string.split(value, on: " ")
+  content
+}
+
+fn load_program_from_mem(content: List(String)) -> List(OpType) {
+  load_program_from_mem_helper(content, [])
+}
+
+fn load_program_from_mem_helper(content: List(String), acc: List(OpType)) -> List(OpType) {
+  case content {
+    [".", ..rest] ->
+      load_program_from_mem_helper(rest, [Dump, ..acc])
+
+    ["+", ..rest] ->
+      load_program_from_mem_helper(rest, [Plus, ..acc])
+
+    ["-", ..rest] ->
+      load_program_from_mem_helper(rest, [Minus, ..acc])
+
+    [head, ..rest] -> {
+      let parsed = int.base_parse(head, 10)
+      let value =
+      case parsed {
+        Ok(inner) -> inner
+        Error(_) -> panic as "ERROR: tried to push a non-int value"
+      }
+      load_program_from_mem_helper(rest, [Push(value), ..acc])
+    }
+
+    [] -> {
+      list.reverse(acc)
+    }
   }
 }
 
@@ -88,19 +130,28 @@ fn simulate_prog(program:  List(OpType), stack: List(Int), stack_len: Int) {
 
 fn usage() {
   io.println("Usage:")
-  io.println("    int    [interprets the program]")
-  panic as "ERROR: Provide a know arg"
+  io.println("    <filename>    [interprets the program]")
 }
 
 pub fn main() {
   let stack = []
   case argv.load().arguments {
-    ["int"] -> {
-      simulate_prog(program, stack, 0)
-      io.println("Done")
+    [name, ..] -> {
+      case name {
+        "-h" -> {
+          usage()
+          io.println("Hope this helps")
+        }
+        _ -> {
+          let content = split_string(name)
+          let program = load_program_from_mem(content)
+          simulate_prog(program, stack, 0)
+        }
+      }
     }
-    _ -> {
+    [] -> {
       usage()
+      io.println("Try Jimbe")
     }
   }
 }
